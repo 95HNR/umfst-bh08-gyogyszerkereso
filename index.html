@@ -27,7 +27,7 @@
     <input id="q" autocomplete="off">
     <p id="allapot" aria-live="polite"></p>
     <ul id="talalatok"></ul>
-    <button id="frissit" type="button">Automatikus frissítés</button>
+    <button id="frissit" type="button" aria-pressed="false">Automatikus frissítés</button>
     <p>Találatok listaáron összesen: <output id="osszeg">0</output> lej</p>
     <script>
         const ADAT = ['Algopyrin', 'Aspirin', 'Amoxicillin', 'Augmentin', 'Algoflex', 'Betaloc', 'Cataflam', 'Cetirizin', 'Diclofenac'];
@@ -100,10 +100,34 @@
             document.getElementById('osszeg').textContent = osszeg;
         }
 
-        document.getElementById('frissit').addEventListener('click', () => {
-            setInterval(() => {
-                fakeFetch(input.value.trim()).then(megjelenit);
-            }, 2000);
+        let frissitInterval = null;
+        const frissitGomb = document.getElementById('frissit');
+
+        frissitGomb.addEventListener('click', () => {
+            if (frissitInterval) {
+                clearInterval(frissitInterval);
+                frissitInterval = null;
+                frissitGomb.textContent = 'Automatikus frissítés';
+                frissitGomb.setAttribute('aria-pressed', 'false');
+            } else {
+                frissitGomb.textContent = 'Automatikus frissítés (Bekapcsolva)';
+                frissitGomb.setAttribute('aria-pressed', 'true');
+                frissitInterval = setInterval(async () => {
+                    if (document.hidden) return;
+                    const q = input.value.trim();
+                    if (!q) return;
+
+                    const jelenlegiId = ++utolsoKeresId;
+                    try {
+                        const nevek = await fakeFetch(q);
+                        if (jelenlegiId !== utolsoKeresId) return;
+                        megjelenit(nevek);
+                    } catch (e) {
+                        if (jelenlegiId !== utolsoKeresId) return;
+                        allapot.textContent = 'Hiba a frissítésnél: ' + e.message;
+                    }
+                }, 2000);
+            }
         });
     </script>
 </body>
